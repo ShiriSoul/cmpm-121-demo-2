@@ -28,12 +28,18 @@ const ctx = canvas.getContext("2d");
 
 // drawing state variables
 let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
+let points: Array<Array<{ x: number; y: number }>> = [];
 
 // handles drawing on canvas
-function draw(e: MouseEvent) {
-    if (!isDrawing || !ctx) return;
+function draw() {
+    if (!ctx) return;
+  
+    // clears canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+    // refills canvas with white
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   
     // drawing style
     ctx.strokeStyle = "black";
@@ -41,31 +47,62 @@ function draw(e: MouseEvent) {
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
   
-    // start drawing
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-  
-    // update last pos
-    lastX = e.offsetX;
-    lastY = e.offsetY;
-  }
+    // draw lines based on stored points
+    for (const line of points) {
+      ctx.beginPath();
+      ctx.moveTo(line[0].x, line[0].y);
+      for (const point of line) {
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.stroke();
+    }
+}
 
-  // mouse event listener
+// drawing change event listener
+canvas.addEventListener("drawing-changed", draw);
+
+// adds new point & dispatches drawing-changed event
+function addPoint(x: number, y: number) {
+    if (!isDrawing) return;
+  
+    // add new point to last line in points
+    if (points.length === 0 || points[points.length - 1].length >= 1) {
+      points.push([{ x, y }]); // starts new line if one doesn't exist already or if last line has at least one point
+    } else {
+      points[points.length - 1].push({ x, y }); // add to last line
+    }
+  
+    // dispatches drawing-changed event
+    const event = new Event("drawing-changed");
+    canvas.dispatchEvent(event);
+}
+
+// draw directly on canvas when mouse moving
+function drawLine(x: number, y: number) {
+    if (!ctx) return;
+  
+    ctx.lineTo(x, y);
+    ctx.stroke();
+}
+
+// mouse event listener
 canvas.addEventListener("mousedown", (e) => {
     isDrawing = true;
-    lastX = e.offsetX;
-    lastY = e.offsetY;
-  });
+    addPoint(e.offsetX, e.offsetY);
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("mousemove", (e) => {
+    addPoint(e.offsetX, e.offsetY);
+    drawLine(e.offsetX, e.offsetY);
+});
   
-  canvas.addEventListener("mousemove", draw);
-  canvas.addEventListener("mouseup", () => (isDrawing = false));
-  canvas.addEventListener("mouseout", () => (isDrawing = false));
-  
-  // clear button event listener
-  clearButton.addEventListener("click", () => {
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  });
+canvas.addEventListener("mouseup", () => (isDrawing = false));
+canvas.addEventListener("mouseout", () => (isDrawing = false));
+
+// clear button event listener
+clearButton.addEventListener("click", () => {
+  points = []; // clears stored points
+  draw(); // reset canvas
+});
