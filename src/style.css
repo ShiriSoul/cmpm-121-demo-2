@@ -93,3 +93,13 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* new stuff i added */
+
+#PlaygroundCanvas {
+  border: 2px solid black; /* thin black border */
+  border-radius: 10px; /* rounded corners */
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); /* drop shadow */
+  display: block;
+  margin: 20px auto; /* centers canvas */
+}
