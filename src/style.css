@@ -102,4 +102,26 @@ button:focus-visible {
   box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); /* drop shadow */
   display: block;
   margin: 20px auto; /* centers canvas */
+  background-color: white;
+}
+
+#clearButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  background-color: #accad3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#clearButton:hover {
+  background-color: #ff6666;
+}
+
+#app {
+  position: relative;
+  display: inline-block;
 }
