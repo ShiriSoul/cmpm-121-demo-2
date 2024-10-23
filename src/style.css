@@ -125,3 +125,19 @@ button:focus-visible {
   position: relative;
   display: inline-block;
 }
+
+#undoButton,
+#redoButton {
+  padding: 5px 10px;
+  margin: 0 5px; /* Add some space between buttons */
+  background-color: #accad3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#undoButton:hover,
+#redoButton:hover {
+  background-color: #ff6666;
+}
