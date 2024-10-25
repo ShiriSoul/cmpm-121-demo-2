@@ -149,6 +149,26 @@ canvas.addEventListener("mousedown", (e) => {
     if (isErasing) {
         selectedColor = "white";
         lineThickness = 10;
+
+        // Check if clicking on a sticker to erase it
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        // Check if the click was on any sticker
+        const stickerIndex = placedStickers.findIndex(
+            (sticker) =>
+                mouseX >= sticker.x &&
+                mouseX <= sticker.x + 48 && // emoji width
+                mouseY >= sticker.y &&
+                mouseY <= sticker.y + 48 // emoji height
+        );
+
+        if (stickerIndex !== -1) {
+            placedStickers.splice(stickerIndex, 1); // Remove the sticker
+            draw(); // Redraw canvas after erasing sticker
+            return; // Exit to prevent drawing a line
+        }
     } else {
         selectedColor = colorPicker.value;
     }
@@ -187,6 +207,7 @@ colorPicker.addEventListener("input", () => {
 clearButton.addEventListener("click", () => {
     lines = [];
     redoStack = [];
+    placedStickers.length = 0; // Clear the placed stickers
     draw();
 });
 
@@ -267,44 +288,14 @@ canvas.addEventListener("mousedown", (e) => {
     // place selected sticker (coord relative to canvas)
     if (isPlacingSticker && selectedSticker) {
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // save placed sticker position
-        placedStickers.push({ emoji: selectedSticker, x, y });
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
 
-        // if currently drawing a line, complete it before placing sticker
-        if (currentLine) {
-            lines.push(currentLine); // save current line to lines array
-            currentLine = null; // reset currentLine after saving
-        }
-
-        draw();
+        // add sticker to the placed stickers array
+        placedStickers.push({ emoji: selectedSticker, x: mouseX, y: mouseY });
+        isPlacingSticker = false; // reset placing mode
+        draw(); // redraw canvas
     }
 });
 
-// mouse event listener for dragging to preview sticker
-canvas.addEventListener("mousemove", (e) => {
-    if (isPlacingSticker && selectedSticker) {
-        draw();
-
-        // Get mouse position relative to canvas
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // draw sticker as a preview at mouse point
-        drawSticker(selectedSticker, x, y);
-    }
-});
-
-// mouse event listener to stop placing sticker
-canvas.addEventListener("mouseup", () => {
-    if (isPlacingSticker) {
-        isPlacingSticker = false;
-        selectedSticker = null; // reset selected sticker
-    }
-});
-
-// initial draw call to start with a clear canvas
 draw();
