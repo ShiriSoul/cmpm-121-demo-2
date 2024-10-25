@@ -17,6 +17,13 @@ canvas.height = 256;
 canvas.id = "PlaygroundCanvas";
 app.appendChild(canvas);
 
+// color picker creation
+const colorPicker = document.createElement("input");
+colorPicker.type = "color";
+colorPicker.id = "colorPicker";
+colorPicker.value = "#000000"; // default color is black
+app.appendChild(colorPicker);
+
 // clear button creation
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
@@ -46,6 +53,12 @@ thickButton.textContent = "Thick";
 thickButton.id = "thickButton";
 app.appendChild(thickButton);
 
+// eraser button creation
+const eraserButton = document.createElement("button");
+eraserButton.textContent = "Eraser";
+eraserButton.id = "eraserButton";
+app.appendChild(eraserButton);
+
 // CSS class for selected tool
 const selectedClass = "selectedTool";
 
@@ -56,10 +69,12 @@ const ctx = canvas.getContext("2d");
 class MarkerLine {
     private points: { x: number; y: number }[] = [];
     private thickness: number;
+    private color: string;
 
-    constructor(x: number, y: number, thickness: number) {
+    constructor(x: number, y: number, thickness: number, color: string) {
         this.points.push({ x, y });
         this.thickness = thickness;
+        this.color = color;
     }
 
     drag(x: number, y: number) {
@@ -70,7 +85,8 @@ class MarkerLine {
         if (this.points.length === 0) return;
 
         ctx.beginPath();
-        ctx.lineWidth = this.thickness; // set line thickness
+        ctx.lineWidth = this.thickness;
+        ctx.strokeStyle = this.color;
         ctx.moveTo(this.points[0].x, this.points[0].y);
 
         for (const point of this.points) {
@@ -86,12 +102,13 @@ let currentLine: MarkerLine | null = null;
 let lines: MarkerLine[] = [];
 let redoStack: MarkerLine[] = [];
 let lineThickness = 2; // default thickness for thin line
+let selectedColor = colorPicker.value; // default color is black
+let isErasing = false;
+let previousColor = selectedColor; // to remember the last used color
 
 // sets selected tool and updates button styles
 function selectTool(thickness: number, button: HTMLButtonElement) {
-    lineThickness = thickness; // Set thickness for new lines
-
-    // update button styles
+    lineThickness = thickness;
     [thinButton, thickButton].forEach((btn) =>
         btn.classList.toggle(selectedClass, btn === button)
     );
@@ -109,11 +126,6 @@ function draw() {
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // set drawing style
-    ctx.strokeStyle = "black";
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-
     // display all saved lines
     for (const line of lines) {
         line.display(ctx);
@@ -127,29 +139,44 @@ function draw() {
 
 // mouse event listeners
 canvas.addEventListener("mousedown", (e) => {
-    redoStack = []; // Clear redo stack on new line
+    redoStack = [];
     isDrawing = true;
-    currentLine = new MarkerLine(e.offsetX, e.offsetY, lineThickness); // create new line with thickness
+
+    if (isErasing) {
+        selectedColor = "white";
+        lineThickness = 10;
+    } else {
+        selectedColor = colorPicker.value;
+    }
+
+    currentLine = new MarkerLine(e.offsetX, e.offsetY, lineThickness, selectedColor);
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (isDrawing && currentLine) {
-        currentLine.drag(e.offsetX, e.offsetY); // add new point to current line
-        draw(); // update canvas display
+        currentLine.drag(e.offsetX, e.offsetY);
+        draw();
     }
 });
 
 canvas.addEventListener("mouseup", () => {
     isDrawing = false;
     if (currentLine) {
-        lines.push(currentLine); // finalize current line
-        currentLine = null; // reset current line
+        lines.push(currentLine);
+        currentLine = null;
         draw();
     }
 });
 
 canvas.addEventListener("mouseout", () => {
-    isDrawing = false; // stop drawing if mouse leaves canvas
+    isDrawing = false;
+});
+
+// color picker event listener
+colorPicker.addEventListener("input", () => {
+    selectedColor = colorPicker.value;
+    isErasing = false;
+    eraserButton.classList.remove(selectedClass);
 });
 
 // clear button event listener
@@ -180,6 +207,23 @@ redoButton.addEventListener("click", () => {
 // tool button event listeners
 thinButton.addEventListener("click", () => selectTool(2, thinButton));
 thickButton.addEventListener("click", () => selectTool(5, thickButton));
+
+// eraser button event listener with toggle functionality
+eraserButton.addEventListener("click", () => {
+    if (isErasing) {
+        // If eraser is active, turn it off and restore the previous color
+        isErasing = false;
+        selectedColor = previousColor;
+        eraserButton.classList.remove(selectedClass);
+    } else {
+        // If eraser is not active, activate it and save the current color
+        isErasing = true;
+        previousColor = selectedColor;
+        selectedColor = "white";
+        lineThickness = 10;
+        eraserButton.classList.add(selectedClass);
+    }
+});
 
 // initial draw call to start with a clear canvas
 draw();
