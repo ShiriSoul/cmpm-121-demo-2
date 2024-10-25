@@ -117,7 +117,6 @@ function selectTool(thickness: number, button: HTMLButtonElement) {
 // initial tool selection
 selectTool(2, thinButton);
 
-// handles drawing on canvas
 function draw() {
     if (!ctx) return;
 
@@ -134,6 +133,11 @@ function draw() {
     // display the current line if drawing
     if (isDrawing && currentLine) {
         currentLine.display(ctx);
+    }
+
+    // Display all placed stickers
+    for (const { emoji, x, y } of placedStickers) {
+        drawSticker(emoji, x, y); // draw each sticker
     }
 }
 
@@ -211,17 +215,94 @@ thickButton.addEventListener("click", () => selectTool(5, thickButton));
 // eraser button event listener with toggle functionality
 eraserButton.addEventListener("click", () => {
     if (isErasing) {
-        // If eraser is active, turn it off and restore the previous color
+        // if eraser is active, turn it off and restore previous color
         isErasing = false;
         selectedColor = previousColor;
         eraserButton.classList.remove(selectedClass);
     } else {
-        // If eraser is not active, activate it and save the current color
+        // if eraser is not active, activate it and save current color
         isErasing = true;
         previousColor = selectedColor;
         selectedColor = "white";
         lineThickness = 10;
         eraserButton.classList.add(selectedClass);
+    }
+});
+
+// sticker Implementation
+const stickers = ["🎨", "✨", "😊"]; // emoji stickers
+const stickerButtonsContainer = document.createElement("div");
+app.appendChild(stickerButtonsContainer); // append to app container
+
+let selectedSticker: string | null = null; // variable to store selected sticker
+let isPlacingSticker = false; // variable to track if a sticker is being placed
+
+// array to hold the placed stickers
+const placedStickers: { emoji: string; x: number; y: number }[] = [];
+
+// create sticker buttons
+stickers.forEach((emoji) => {
+    const stickerButton = document.createElement("button");
+    stickerButton.textContent = emoji; // set button text to emoji
+    stickerButton.style.fontSize = "24px";
+    stickerButtonsContainer.appendChild(stickerButton);
+
+    // add click event to select sticker
+    stickerButton.addEventListener("click", () => {
+        selectedSticker = emoji; // set selected sticker
+        isPlacingSticker = true; // enable placing mode
+    });
+});
+
+// draw sticker on canvas func
+function drawSticker(emoji: string, x: number, y: number) {
+    if (ctx) {
+        ctx.font = '48px serif'; // set font size for emoji
+        ctx.fillText(emoji, x, y); // draw the emoji at specified coordinates
+    }
+}
+
+// mouse event listener for placing stickers
+canvas.addEventListener("mousedown", (e) => {
+    // place selected sticker (coord relative to canvas)
+    if (isPlacingSticker && selectedSticker) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // save placed sticker position
+        placedStickers.push({ emoji: selectedSticker, x, y });
+
+        // if currently drawing a line, complete it before placing sticker
+        if (currentLine) {
+            lines.push(currentLine); // save current line to lines array
+            currentLine = null; // reset currentLine after saving
+        }
+
+        draw();
+    }
+});
+
+// mouse event listener for dragging to preview sticker
+canvas.addEventListener("mousemove", (e) => {
+    if (isPlacingSticker && selectedSticker) {
+        draw();
+
+        // Get mouse position relative to canvas
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // draw sticker as a preview at mouse point
+        drawSticker(selectedSticker, x, y);
+    }
+});
+
+// mouse event listener to stop placing sticker
+canvas.addEventListener("mouseup", () => {
+    if (isPlacingSticker) {
+        isPlacingSticker = false;
+        selectedSticker = null; // reset selected sticker
     }
 });
 
