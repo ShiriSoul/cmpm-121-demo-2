@@ -35,15 +35,31 @@ redoButton.textContent = "Redo";
 redoButton.id = "redoButton";
 app.appendChild(redoButton);
 
+// thin and thick tool buttons
+const thinButton = document.createElement("button");
+thinButton.textContent = "Thin";
+thinButton.id = "thinButton";
+app.appendChild(thinButton);
+
+const thickButton = document.createElement("button");
+thickButton.textContent = "Thick";
+thickButton.id = "thickButton";
+app.appendChild(thickButton);
+
+// CSS class for selected tool
+const selectedClass = "selectedTool";
+
 // get canvas context
 const ctx = canvas.getContext("2d");
 
 // markerLine class
 class MarkerLine {
     private points: { x: number; y: number }[] = [];
+    private thickness: number;
 
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, thickness: number) {
         this.points.push({ x, y });
+        this.thickness = thickness;
     }
 
     drag(x: number, y: number) {
@@ -54,6 +70,7 @@ class MarkerLine {
         if (this.points.length === 0) return;
 
         ctx.beginPath();
+        ctx.lineWidth = this.thickness; // set line thickness
         ctx.moveTo(this.points[0].x, this.points[0].y);
 
         for (const point of this.points) {
@@ -68,6 +85,20 @@ let isDrawing = false;
 let currentLine: MarkerLine | null = null;
 let lines: MarkerLine[] = [];
 let redoStack: MarkerLine[] = [];
+let lineThickness = 2; // default thickness for thin line
+
+// sets selected tool and updates button styles
+function selectTool(thickness: number, button: HTMLButtonElement) {
+    lineThickness = thickness; // Set thickness for new lines
+
+    // update button styles
+    [thinButton, thickButton].forEach((btn) =>
+        btn.classList.toggle(selectedClass, btn === button)
+    );
+}
+
+// initial tool selection
+selectTool(2, thinButton);
 
 // handles drawing on canvas
 function draw() {
@@ -80,7 +111,6 @@ function draw() {
 
     // set drawing style
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
@@ -89,37 +119,30 @@ function draw() {
         line.display(ctx);
     }
 
-    // display current line if drawing
+    // display the current line if drawing
     if (isDrawing && currentLine) {
         currentLine.display(ctx);
     }
 }
 
-// dispatches "drawing-changed" event
-function dispatchDrawingChanged() {
-    const event = new CustomEvent("drawing-changed");
-    canvas.dispatchEvent(event); // Dispatch the event
-}
-
 // mouse event listeners
 canvas.addEventListener("mousedown", (e) => {
-    redoStack = []; // clear redo stack on new line
+    redoStack = []; // Clear redo stack on new line
     isDrawing = true;
-    currentLine = new MarkerLine(e.offsetX, e.offsetY); // create new line with initial position
+    currentLine = new MarkerLine(e.offsetX, e.offsetY, lineThickness); // create new line with thickness
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (isDrawing && currentLine) {
         currentLine.drag(e.offsetX, e.offsetY); // add new point to current line
-        draw();
+        draw(); // update canvas display
     }
 });
 
 canvas.addEventListener("mouseup", () => {
     isDrawing = false;
     if (currentLine) {
-        lines.push(currentLine); // finalize the current line
-        dispatchDrawingChanged(); // dispatch event
+        lines.push(currentLine); // finalize current line
         currentLine = null; // reset current line
         draw();
     }
@@ -131,16 +154,16 @@ canvas.addEventListener("mouseout", () => {
 
 // clear button event listener
 clearButton.addEventListener("click", () => {
-    lines = []; // clear stored lines
-    redoStack = []; // clear redo stack
+    lines = [];
+    redoStack = [];
     draw();
 });
 
 // undo button event listener
 undoButton.addEventListener("click", () => {
     if (lines.length > 0) {
-        const lastLine = lines.pop(); // remove last line from lines
-        if (lastLine) redoStack.push(lastLine); // add to redo stack
+        const lastLine = lines.pop();
+        if (lastLine) redoStack.push(lastLine);
         draw();
     }
 });
@@ -148,16 +171,15 @@ undoButton.addEventListener("click", () => {
 // redo button event listener
 redoButton.addEventListener("click", () => {
     if (redoStack.length > 0) {
-        const lineToRedo = redoStack.pop(); // pop from redo stack
-        if (lineToRedo) lines.push(lineToRedo); // add back to lines
+        const lineToRedo = redoStack.pop();
+        if (lineToRedo) lines.push(lineToRedo);
         draw();
     }
 });
 
-// Event listener for "drawing-changed"
-canvas.addEventListener("drawing-changed", () => {
-    draw(); // redraw all lines when drawing-changed event is triggered
-});
+// tool button event listeners
+thinButton.addEventListener("click", () => selectTool(2, thinButton));
+thickButton.addEventListener("click", () => selectTool(5, thickButton));
 
-// call draw initially to start with clear canvas
+// initial draw call to start with a clear canvas
 draw();

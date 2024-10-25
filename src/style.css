@@ -129,7 +129,7 @@ button:focus-visible {
 #undoButton,
 #redoButton {
   padding: 5px 10px;
-  margin: 0 5px; /* Add some space between buttons */
+  margin: 0 5px; /* add some space between buttons */
   background-color: #accad3;
   color: white;
   border: none;
@@ -137,7 +137,21 @@ button:focus-visible {
   cursor: pointer;
 }
 
+/* hover effect for buttons */
 #undoButton:hover,
-#redoButton:hover {
+#redoButton:hover,
+#thinButton:hover,
+#thickButton:hover {
   background-color: #ff6666;
+}
+
+/* selected tool styling */
+.selectedTool {
+  border: 2px solid gold;
+  font-weight: bold;
+}
+
+/* default button styling */
+button {
+  border: 2px solid transparent;
 }
