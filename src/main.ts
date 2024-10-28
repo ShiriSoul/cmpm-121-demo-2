@@ -24,6 +24,13 @@ colorPicker.id = "colorPicker";
 colorPicker.value = "#000000"; // default color is black
 app.appendChild(colorPicker);
 
+// color randomizer button creation
+const randomColorButton = document.createElement("button");
+randomColorButton.textContent = "Random Color";
+randomColorButton.id = "randomColorButton";
+app.appendChild(randomColorButton);
+
+
 // clear button creation
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
@@ -217,6 +224,51 @@ colorPicker.addEventListener("input", () => {
     eraserButton.classList.remove(selectedClass);
 });
 
+// color randomizer event listeners
+let randomColorEnabled = false; // flags for random color
+
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+randomColorButton.addEventListener("click", () => {
+    randomColorEnabled = !randomColorEnabled; // toggle
+    if (randomColorEnabled) {
+        randomColorButton.classList.add(selectedClass); // highlights button
+    } else {
+        randomColorButton.classList.remove(selectedClass);
+    }
+
+    // update color picker to random color if enabled
+    if (randomColorEnabled) {
+        const randomColor = getRandomColor();
+        colorPicker.value = randomColor; // update color picker to random color
+    } else {
+        colorPicker.value = selectedColor; // reset to last selected color
+    }
+});
+
+canvas.addEventListener("mousedown", (e) => {
+    redoStack = [];
+    isDrawing = true;
+
+    if (isErasing) {
+        // if is erasing then do nothing, else...
+    } else {
+        selectedColor = randomColorEnabled ? getRandomColor() : colorPicker.value; // use random color if enabled
+        if (randomColorEnabled) {
+            colorPicker.value = selectedColor; // update color picker to reflect the random color
+        }
+    }
+
+    currentLine = new MarkerLine(e.offsetX, e.offsetY, lineThickness, selectedColor);
+});
+
 // clear button event listener
 clearButton.addEventListener("click", () => {
     lines = [];
@@ -397,3 +449,40 @@ function drawStickerOnExport(emoji: string, x: number, y: number, ctx: CanvasRen
     ctx.font = "48px sans-serif";
     ctx.fillText(emoji, x, y); // draws stickers/emojis at specified position
 }
+
+// draw tool preview
+function drawToolPreview(x: number, y: number) {
+    if (!ctx) return;
+
+    // clears preview area before drawing
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    draw(); // redraw existing lines and stickers
+
+    // draw the tool preview (circle on mouse pointer)
+    ctx.beginPath();
+    ctx.arc(x, y, lineThickness, 0, Math.PI * 2); // circle size equal to tool size
+    ctx.fillStyle = selectedColor; // set color to selected color
+    ctx.fill();
+    ctx.closePath();
+}
+
+// event listener for mouse move to trigger tool-moved event
+canvas.addEventListener("mousemove", (e) => {
+    if (isDrawing && currentLine) {
+        currentLine.drag(e.offsetX, e.offsetY);
+        draw();
+    }
+
+    // update mouse position and draw tool preview
+    if (isPlacingSticker) {
+        const rect = canvas.getBoundingClientRect();
+        mousePosition = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+        draw();
+    } else {
+        // draw tool preview
+        drawToolPreview(e.offsetX, e.offsetY);
+    }
+});
