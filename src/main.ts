@@ -10,6 +10,37 @@ const title = document.createElement("h1");
 title.textContent = APP_NAME;
 app.appendChild(title);
 
+// markerLine class
+class MarkerLine {
+    private points: { x: number; y: number }[] = [];
+    private thickness: number;
+    private color: string;
+
+    constructor(x: number, y: number, thickness: number, color: string) {
+        this.points.push({ x, y });
+        this.thickness = thickness;
+        this.color = color;
+    }
+
+    drag(x: number, y: number) {
+        this.points.push({ x, y });
+    }
+
+    display(ctx: CanvasRenderingContext2D) {
+        if (this.points.length === 0) return;
+
+        ctx.beginPath();
+        ctx.lineWidth = this.thickness;
+        ctx.strokeStyle = this.color;
+        ctx.moveTo(this.points[0].x, this.points[0].y);
+
+        for (const point of this.points) {
+            ctx.lineTo(point.x, point.y);
+        }
+        ctx.stroke();
+    }
+}
+
 // canvas element creation
 const canvas = document.createElement("canvas");
 canvas.width = 256;
@@ -67,41 +98,10 @@ eraserButton.id = "eraserButton";
 app.appendChild(eraserButton);
 
 // CSS class for selected tool
-const selectedClass = "selectedTool";
+const selectedToolClass = "selectedTool";
 
 // get canvas context
 const ctx = canvas.getContext("2d");
-
-// markerLine class
-class MarkerLine {
-    private points: { x: number; y: number }[] = [];
-    private thickness: number;
-    private color: string;
-
-    constructor(x: number, y: number, thickness: number, color: string) {
-        this.points.push({ x, y });
-        this.thickness = thickness;
-        this.color = color;
-    }
-
-    drag(x: number, y: number) {
-        this.points.push({ x, y });
-    }
-
-    display(ctx: CanvasRenderingContext2D) {
-        if (this.points.length === 0) return;
-
-        ctx.beginPath();
-        ctx.lineWidth = this.thickness;
-        ctx.strokeStyle = this.color;
-        ctx.moveTo(this.points[0].x, this.points[0].y);
-
-        for (const point of this.points) {
-            ctx.lineTo(point.x, point.y);
-        }
-        ctx.stroke();
-    }
-}
 
 // drawing state variables
 let isDrawing = false;
@@ -117,7 +117,7 @@ let previousColor = selectedColor; // to remember the last used color
 function selectTool(thickness: number, button: HTMLButtonElement) {
     lineThickness = thickness;
     [thinButton, thickButton].forEach((btn) =>
-        btn.classList.toggle(selectedClass, btn === button)
+        btn.classList.toggle(selectedToolClass, btn === button)
     );
 }
 
@@ -221,7 +221,7 @@ canvas.addEventListener("mouseout", () => {
 colorPicker.addEventListener("input", () => {
     selectedColor = colorPicker.value;
     isErasing = false;
-    eraserButton.classList.remove(selectedClass);
+    eraserButton.classList.remove(selectedToolClass);
 });
 
 // color randomizer event listeners
@@ -239,9 +239,9 @@ function getRandomColor() {
 randomColorButton.addEventListener("click", () => {
     randomColorEnabled = !randomColorEnabled; // toggle
     if (randomColorEnabled) {
-        randomColorButton.classList.add(selectedClass); // highlights button
+        randomColorButton.classList.add(selectedToolClass); // highlights button
     } else {
-        randomColorButton.classList.remove(selectedClass);
+        randomColorButton.classList.remove(selectedToolClass);
     }
 
     // update color picker to random color if enabled
@@ -305,14 +305,14 @@ eraserButton.addEventListener("click", () => {
         // if eraser is active, turn it off and restore previous color
         isErasing = false;
         selectedColor = previousColor;
-        eraserButton.classList.remove(selectedClass);
+        eraserButton.classList.remove(selectedToolClass);
     } else {
         // if eraser is not active, activate it and save current color
         isErasing = true;
         previousColor = selectedColor;
         selectedColor = "white";
         lineThickness = 10;
-        eraserButton.classList.add(selectedClass);
+        eraserButton.classList.add(selectedToolClass);
     }
 });
 
