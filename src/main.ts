@@ -139,6 +139,11 @@ function draw() {
     for (const { emoji, x, y } of placedStickers) {
         drawSticker(emoji, x, y); // draw each sticker
     }
+
+    // Display the sticker preview if a sticker is selected
+    if (isPlacingSticker && selectedSticker && mousePosition) {
+        drawSticker(selectedSticker, mousePosition.x, mousePosition.y, true); // pass true for preview mode
+    }
 }
 
 // mouse event listeners
@@ -180,6 +185,15 @@ canvas.addEventListener("mousemove", (e) => {
     if (isDrawing && currentLine) {
         currentLine.drag(e.offsetX, e.offsetY);
         draw();
+    }
+
+    if (isPlacingSticker) {
+        const rect = canvas.getBoundingClientRect();
+        mousePosition = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+        draw(); // Redraw canvas with updated mouse position for preview
     }
 });
 
@@ -250,52 +264,90 @@ eraserButton.addEventListener("click", () => {
     }
 });
 
-// sticker Implementation
-const stickers = ["🎨", "✨", "😊"]; // emoji stickers
+// sticker implementation
+const stickers = [
+    { emoji: "❤️", size: 144 }, // size in pixels
+    { emoji: "✨", size: 144 },
+    { emoji: "😊", size: 144 }
+];
 const stickerButtonsContainer = document.createElement("div");
 app.appendChild(stickerButtonsContainer); // append to app container
 
 let selectedSticker: string | null = null; // variable to store selected sticker
 let isPlacingSticker = false; // variable to track if a sticker is being placed
+let mousePosition: { x: number; y: number } | null = null; // mouse position for preview
 
 // array to hold the placed stickers
 const placedStickers: { emoji: string; x: number; y: number }[] = [];
 
-// create sticker buttons
-stickers.forEach((emoji) => {
+// Create sticker buttons
+stickers.forEach(({ emoji }) => {
     const stickerButton = document.createElement("button");
-    stickerButton.textContent = emoji; // set button text to emoji
+    stickerButton.textContent = emoji; // Set button text to emoji
     stickerButton.style.fontSize = "24px";
     stickerButtonsContainer.appendChild(stickerButton);
 
-    // add click event to select sticker
+    // Add click event to select sticker
     stickerButton.addEventListener("click", () => {
-        selectedSticker = emoji; // set selected sticker
-        isPlacingSticker = true; // enable placing mode
+        selectedSticker = emoji;
+        isPlacingSticker = true; // Set the placing mode to true
+        mousePosition = null; // Reset mouse position for preview
+        draw(); // Redraw canvas to remove any preview
     });
 });
 
-// draw sticker on canvas func
-function drawSticker(emoji: string, x: number, y: number) {
-    if (ctx) {
-        ctx.font = '48px serif'; // set font size for emoji
-        ctx.fillText(emoji, x, y); // draw the emoji at specified coordinates
-    }
-}
+// Add button for custom stickers
+const customStickerButton = document.createElement("button");
+customStickerButton.textContent = "Add Custom Sticker";
+stickerButtonsContainer.appendChild(customStickerButton);
 
-// mouse event listener for placing stickers
-canvas.addEventListener("mousedown", (e) => {
-    // place selected sticker (coord relative to canvas)
-    if (isPlacingSticker && selectedSticker) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+customStickerButton.addEventListener("click", () => {
+    const stickerName = prompt("Enter the sticker name:") || ""; // prompt for sticker name
+    if (stickerName) {
+        const customStickerButton = document.createElement("button");
+        customStickerButton.textContent = stickerName; // Set button text to custom sticker name
+        customStickerButton.style.fontSize = "24px";
+        stickerButtonsContainer.appendChild(customStickerButton);
 
-        // add sticker to the placed stickers array
-        placedStickers.push({ emoji: selectedSticker, x: mouseX, y: mouseY });
-        isPlacingSticker = false; // reset placing mode
-        draw(); // redraw canvas
+        // Add click event to select custom sticker
+        customStickerButton.addEventListener("click", () => {
+            selectedSticker = stickerName;
+            isPlacingSticker = true; // Set the placing mode to true
+            mousePosition = null; // Reset mouse position for preview
+            draw(); // Redraw canvas to remove any preview
+        });
     }
 });
 
-draw();
+// Function to draw stickers on canvas
+function drawSticker(emoji: string, x: number, y: number, preview: boolean = false) {
+    if (!ctx) return;
+
+    ctx.font = "48px sans-serif";
+    
+    if (preview) {
+        ctx.globalAlpha = 0.5; // Make the preview semi-transparent
+    } else {
+        ctx.globalAlpha = 1.0; // Full opacity for placed stickers
+    }
+
+    ctx.fillText(emoji, x, y); // Draw the sticker
+
+    ctx.globalAlpha = 1.0; // Reset alpha to default
+}
+
+// Mouse event listener for placing sticker
+canvas.addEventListener("click", (e) => {
+    if (isPlacingSticker && selectedSticker) {
+        // Get mouse position relative to canvas
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Place the sticker at mouse position
+        placedStickers.push({ emoji: selectedSticker, x, y });
+        selectedSticker = null; // Reset selected sticker
+        isPlacingSticker = false; // Exit placing mode
+        draw(); // Redraw canvas to show placed sticker
+    }
+});
