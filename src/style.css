@@ -121,6 +121,22 @@ button:focus-visible {
   background-color: #ff6666;
 }
 
+#exportButton {
+  position: absolute;
+  top: 10px;
+  right: -70px;
+  padding: 5px 10px;
+  background-color: #accad3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#exportButton:hover {
+  background-color: #ff6666;
+}
+
 #app {
   position: relative;
   display: inline-block;
@@ -154,4 +170,5 @@ button:focus-visible {
 /* default button styling */
 button {
   border: 2px solid transparent;
+  margin: 1px 2px;
 }
