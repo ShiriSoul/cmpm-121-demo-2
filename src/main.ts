@@ -143,13 +143,13 @@ function draw() {
     }
 
     // display all placed stickers
-    for (const { emoji, x, y } of placedStickers) {
-        drawSticker(emoji, x, y); // draw each sticker
+    for (const { emoji, x, y, color } of placedStickers) {
+        drawSticker(emoji, x, y, color); // draw each sticker
     }
 
     // display sticker preview if a sticker is selected
     if (isPlacingSticker && selectedSticker && mousePosition) {
-        drawSticker(selectedSticker, mousePosition.x, mousePosition.y, true); // pass true for preview mode
+        drawSticker(selectedSticker, mousePosition.x, mousePosition.y, selectedColor, true); // pass true for preview mode
     }
 }
 
@@ -330,7 +330,7 @@ let isPlacingSticker = false; // variable to track if a sticker is being placed
 let mousePosition: { x: number; y: number } | null = null; // mouse position for preview
 
 // array to hold the placed stickers
-const placedStickers: { emoji: string; x: number; y: number }[] = [];
+const placedStickers: { emoji: string; x: number; y: number; color: string}[] = [];
 
 // create sticker buttons
 stickers.forEach(({ emoji }) => {
@@ -372,7 +372,7 @@ customStickerButton.addEventListener("click", () => {
 });
 
 // draw stickers on canvas
-function drawSticker(emoji: string, x: number, y: number, preview: boolean = false) {
+function drawSticker(emoji: string, x: number, y: number, color: string, preview: boolean = false) {
     if (!ctx) return;
 
     ctx.font = "48px sans-serif";
@@ -382,8 +382,11 @@ function drawSticker(emoji: string, x: number, y: number, preview: boolean = fal
     } else {
         ctx.globalAlpha = 1.0; // sticker full opcaity
     }
-
+    ctx.save();
+    ctx.fillStyle = color;
     ctx.fillText(emoji, x, y); // draw sticker
+    ctx.restore();
+    
 
     ctx.globalAlpha = 1.0;
 }
@@ -397,7 +400,7 @@ canvas.addEventListener("click", (e) => {
         const y = e.clientY - rect.top;
 
         // place the sticker at mouse position
-        placedStickers.push({ emoji: selectedSticker, x, y });
+        placedStickers.push({ emoji: selectedSticker, x: x, y: y, color: selectedColor });
         selectedSticker = null; // reset selected sticker
         isPlacingSticker = false; // exit placing mode
         draw(); // redraw canvas to show placed sticker
@@ -433,8 +436,8 @@ exportButton.addEventListener("click", () => {
     }
 
     // redraws all placed stickers on export canvas
-    for (const { emoji, x, y } of placedStickers) {
-        drawStickerOnExport(emoji, x, y, exportCtx); // use original position without scaling
+    for (const { emoji, x, y, color } of placedStickers) {
+        drawStickerOnExport(emoji, x, y, color, exportCtx); // use original position without scaling
     }
 
     // trigger file download
@@ -445,9 +448,13 @@ exportButton.addEventListener("click", () => {
 });
 
 // draw stickers on export canvas
-function drawStickerOnExport(emoji: string, x: number, y: number, ctx: CanvasRenderingContext2D) {
+function drawStickerOnExport(emoji: string, x: number, y: number, color: string, ctx: CanvasRenderingContext2D) {
     ctx.font = "48px sans-serif";
+
+    ctx.save();
+    ctx.fillStyle = color;
     ctx.fillText(emoji, x, y); // draws stickers/emojis at specified position
+    ctx.restore();
 }
 
 // draw tool preview
