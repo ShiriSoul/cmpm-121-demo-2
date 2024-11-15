@@ -61,7 +61,6 @@ randomColorButton.textContent = "Random Color";
 randomColorButton.id = "randomColorButton";
 app.appendChild(randomColorButton);
 
-
 // clear button creation
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
@@ -113,45 +112,54 @@ let selectedColor = colorPicker.value; // default color is black
 let isErasing = false;
 let previousColor = selectedColor; // to remember the last used color
 
-// sets selected tool and updates button styles
-function selectTool(thickness: number, button: HTMLButtonElement) {
-    lineThickness = thickness;
-    [thinButton, thickButton].forEach((btn) =>
-        btn.classList.toggle(selectedToolClass, btn === button)
-    );
-}
-
 // initial tool selection
 selectTool(2, thinButton);
 
-function draw() {
-    if (!ctx) return;
+// color randomizer event listeners
+let randomColorEnabled = false; // flags for random color
 
-    // clear canvas and fill with white
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+// sticker implementation
+const stickers = [
+    { emoji: "❤️", size: 144 }, // size in pixels
+    { emoji: "✨", size: 144 },
+    { emoji: "😊", size: 144 }
+];
+const stickerButtonsContainer = document.createElement("div");
+app.appendChild(stickerButtonsContainer); // append to app container
 
-    // display all saved lines
-    for (const line of lines) {
-        line.display(ctx);
-    }
+let selectedSticker: string | null = null; // variable to store selected sticker
+let isPlacingSticker = false; // variable to track if a sticker is being placed
+let mousePosition: { x: number; y: number } | null = null; // mouse position for preview
 
-    // display the current line if drawing
-    if (isDrawing && currentLine) {
-        currentLine.display(ctx);
-    }
+// array to hold the placed stickers
+const placedStickers: { emoji: string; x: number; y: number; color: string}[] = [];
 
-    // display all placed stickers
-    for (const { emoji, x, y, color } of placedStickers) {
-        drawSticker(emoji, x, y, color); // draw each sticker
-    }
+// create sticker buttons
+stickers.forEach(({ emoji }) => {
+    const stickerButton = document.createElement("button");
+    stickerButton.textContent = emoji; // sets button text to emoji
+    stickerButton.style.fontSize = "24px";
+    stickerButtonsContainer.appendChild(stickerButton);
 
-    // display sticker preview if a sticker is selected
-    if (isPlacingSticker && selectedSticker && mousePosition) {
-        drawSticker(selectedSticker, mousePosition.x, mousePosition.y, selectedColor, true); // pass true for preview mode
-    }
-}
+    // adds click event to select sticker
+    stickerButton.addEventListener("click", () => {
+        selectedSticker = emoji;
+        isPlacingSticker = true;
+        mousePosition = null;
+        draw();
+    });
+});
+
+// adds button for custom stickers
+const customStickerButton = document.createElement("button");
+customStickerButton.textContent = "Add Custom Sticker";
+stickerButtonsContainer.appendChild(customStickerButton);
+
+// export button creation
+const exportButton = document.createElement("button");
+exportButton.textContent = "Export";
+exportButton.id = "exportButton";
+app.appendChild(exportButton);
 
 // mouse event listeners
 canvas.addEventListener("mousedown", (e) => {
@@ -223,18 +231,6 @@ colorPicker.addEventListener("input", () => {
     isErasing = false;
     eraserButton.classList.remove(selectedToolClass);
 });
-
-// color randomizer event listeners
-let randomColorEnabled = false; // flags for random color
-
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
 
 randomColorButton.addEventListener("click", () => {
     randomColorEnabled = !randomColorEnabled; // toggle
@@ -316,43 +312,6 @@ eraserButton.addEventListener("click", () => {
     }
 });
 
-// sticker implementation
-const stickers = [
-    { emoji: "❤️", size: 144 }, // size in pixels
-    { emoji: "✨", size: 144 },
-    { emoji: "😊", size: 144 }
-];
-const stickerButtonsContainer = document.createElement("div");
-app.appendChild(stickerButtonsContainer); // append to app container
-
-let selectedSticker: string | null = null; // variable to store selected sticker
-let isPlacingSticker = false; // variable to track if a sticker is being placed
-let mousePosition: { x: number; y: number } | null = null; // mouse position for preview
-
-// array to hold the placed stickers
-const placedStickers: { emoji: string; x: number; y: number; color: string}[] = [];
-
-// create sticker buttons
-stickers.forEach(({ emoji }) => {
-    const stickerButton = document.createElement("button");
-    stickerButton.textContent = emoji; // sets button text to emoji
-    stickerButton.style.fontSize = "24px";
-    stickerButtonsContainer.appendChild(stickerButton);
-
-    // adds click event to select sticker
-    stickerButton.addEventListener("click", () => {
-        selectedSticker = emoji;
-        isPlacingSticker = true;
-        mousePosition = null;
-        draw();
-    });
-});
-
-// adds button for custom stickers
-const customStickerButton = document.createElement("button");
-customStickerButton.textContent = "Add Custom Sticker";
-stickerButtonsContainer.appendChild(customStickerButton);
-
 customStickerButton.addEventListener("click", () => {
     const stickerName = prompt("Enter the sticker name:") || "";
     if (stickerName) {
@@ -371,26 +330,6 @@ customStickerButton.addEventListener("click", () => {
     }
 });
 
-// draw stickers on canvas
-function drawSticker(emoji: string, x: number, y: number, color: string, preview: boolean = false) {
-    if (!ctx) return;
-
-    ctx.font = "48px sans-serif";
-    
-    if (preview) {
-        ctx.globalAlpha = 0.5; // preview semi-transparent opacity
-    } else {
-        ctx.globalAlpha = 1.0; // sticker full opcaity
-    }
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.fillText(emoji, x, y); // draw sticker
-    ctx.restore();
-    
-
-    ctx.globalAlpha = 1.0;
-}
-
 // mouse event listener for placing sticker
 canvas.addEventListener("click", (e) => {
     if (isPlacingSticker && selectedSticker) {
@@ -406,12 +345,6 @@ canvas.addEventListener("click", (e) => {
         draw(); // redraw canvas to show placed sticker
     }
 });
-
-// export button creation
-const exportButton = document.createElement("button");
-exportButton.textContent = "Export";
-exportButton.id = "exportButton";
-app.appendChild(exportButton);
 
 // export button event listener
 exportButton.addEventListener("click", () => {
@@ -447,32 +380,6 @@ exportButton.addEventListener("click", () => {
     link.click();
 });
 
-// draw stickers on export canvas
-function drawStickerOnExport(emoji: string, x: number, y: number, color: string, ctx: CanvasRenderingContext2D) {
-    ctx.font = "48px sans-serif";
-
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.fillText(emoji, x, y); // draws stickers/emojis at specified position
-    ctx.restore();
-}
-
-// draw tool preview
-function drawToolPreview(x: number, y: number) {
-    if (!ctx) return;
-
-    // clears preview area before drawing
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw(); // redraw existing lines and stickers
-
-    // draw the tool preview (circle on mouse pointer)
-    ctx.beginPath();
-    ctx.arc(x, y, lineThickness, 0, Math.PI * 2); // circle size equal to tool size
-    ctx.fillStyle = selectedColor; // set color to selected color
-    ctx.fill();
-    ctx.closePath();
-}
-
 // event listener for mouse move to trigger tool-moved event
 canvas.addEventListener("mousemove", (e) => {
     if (isDrawing && currentLine) {
@@ -493,3 +400,96 @@ canvas.addEventListener("mousemove", (e) => {
         drawToolPreview(e.offsetX, e.offsetY);
     }
 });
+
+function draw() {
+    if (!ctx) return;
+
+    // clear canvas and fill with white
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // display all saved lines
+    for (const line of lines) {
+        line.display(ctx);
+    }
+
+    // display the current line if drawing
+    if (isDrawing && currentLine) {
+        currentLine.display(ctx);
+    }
+
+    // display all placed stickers
+    for (const { emoji, x, y, color } of placedStickers) {
+        drawSticker(emoji, x, y, color); // draw each sticker
+    }
+
+    // display sticker preview if a sticker is selected
+    if (isPlacingSticker && selectedSticker && mousePosition) {
+        drawSticker(selectedSticker, mousePosition.x, mousePosition.y, selectedColor, true); // pass true for preview mode
+    }
+}
+
+// draw tool preview
+function drawToolPreview(x: number, y: number) {
+    if (!ctx) return;
+
+    // clears preview area before drawing
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    draw(); // redraw existing lines and stickers
+
+    // draw the tool preview (circle on mouse pointer)
+    ctx.beginPath();
+    ctx.arc(x, y, lineThickness, 0, Math.PI * 2); // circle size equal to tool size
+    ctx.fillStyle = selectedColor; // set color to selected color
+    ctx.fill();
+    ctx.closePath();
+}
+
+
+// draw stickers on canvas
+function drawSticker(emoji: string, x: number, y: number, color: string, preview: boolean = false) {
+    if (!ctx) return;
+
+    ctx.font = "48px sans-serif";
+    
+    if (preview) {
+        ctx.globalAlpha = 0.5; // preview semi-transparent opacity
+    } else {
+        ctx.globalAlpha = 1.0; // sticker full opcaity
+    }
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.fillText(emoji, x, y); // draw sticker
+    ctx.restore();
+    
+
+    ctx.globalAlpha = 1.0;
+}
+
+// draw stickers on export canvas
+function drawStickerOnExport(emoji: string, x: number, y: number, color: string, ctx: CanvasRenderingContext2D) {
+    ctx.font = "48px sans-serif";
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.fillText(emoji, x, y); // draws stickers/emojis at specified position
+    ctx.restore();
+}
+
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// sets selected tool and updates button styles
+function selectTool(thickness: number, button: HTMLButtonElement) {
+    lineThickness = thickness;
+    [thinButton, thickButton].forEach((btn) =>
+        btn.classList.toggle(selectedToolClass, btn === button)
+    );
+}
