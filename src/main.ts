@@ -401,6 +401,12 @@ canvas.addEventListener("mousemove", (e) => {
     }
 });
 
+canvas.addEventListener("mouseleave", () => {
+    selectedSticker = null;
+    isPlacingSticker = false;
+    draw();
+});
+
 function draw() {
     if (!ctx) return;
 
